@@ -9,13 +9,15 @@ contract TokenManager is ERC20{
     
     constructor (string memory name, string memory symbol) ERC20(name,symbol){_owner = msg.sender;}
     
+    modifier OnlyOwner(){
+        //Controlar quien lo ejecuta
+        require(msg.sender == _owner,"ERC20: solo el propietario del contrato puede acceder.");_;
+    }
     
     // Llama a la funcion _mint del contrato ERC20,
     // Crea/Suma la cantidad de tokens amount a la cuenta account
     // Se requiere permisos para el msg.sender 
-    function mintImplement(address account, uint256 amount) external {
-        //Controlar quien lo ejecuta
-        require(msg.sender == _owner,"ERC20: solo el propietario del contrato puede acceder.");
+    function mintImplement(address account, uint256 amount) external OnlyOwner {
         //Controlar amount sea > 0
         require(amount > uint256(0),"ERROR: cantidad no valida");
         //Controlar account existente ya se realiza en el contrato ERC20
@@ -28,9 +30,7 @@ contract TokenManager is ERC20{
     // Llama a la funcion _burn del contrato ERC20,
     // Destruye/Resta la cantidad de tokens amount a la cuenta account
     // Se requiere que se tienen tokens necesarios y con permisos para el msg.sender
-    function burnImplement(address account, uint256 amount) public virtual {
-        //Controlar quien lo ejecuta
-        require(msg.sender == _owner,"ERC20: solo el propietario del contrato puede acceder.");
+    function burnImplement(address account, uint256 amount) public virtual OnlyOwner {
         //Verificar que se tienen tokens necesarios
         uint256 currentAllowance = allowance(account, _msgSender());
         require(currentAllowance >= amount, "ERC20: cantidad burn excedida de lo permitido");
@@ -38,6 +38,17 @@ contract TokenManager is ERC20{
         //Decrementar la cantidad permitida
         _approve(account, _msgSender(), currentAllowance - amount);
     }
+    
+    function transferFromImplement(address sender, address account, uint amount) external OnlyOwner {
+        //Verificar que se tienen tokens necesarios
+        uint256 currentAllowanceSender = allowance(sender, _msgSender());
+        require(currentAllowanceSender >= amount, "ERC20: cantidad burn excedida de lo permitido");
+        transferFrom(sender,account,amount);
+        _approve(sender,_msgSender(), currentAllowanceSender - amount);
+        _approve(account,_msgSender(), allowance(account, _msgSender()) + amount);
+    }
 
 }
+
+
 
